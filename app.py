@@ -12,7 +12,7 @@ from utils.email_utils import email_forgot_password, email_forgot_username
 from utils.steam import fetch_game_details
 
 if not os.path.exists("./config/config.yaml"):
-    path = shutil.copy("./config/config.example.yaml", "./config/config.yaml")
+    path = shutil.copy("./config.example.yaml", "./config/config.yaml")
     st.success("Config file created. Please modify config.yaml with your settings.")
     print(path)
     st.error(path)
