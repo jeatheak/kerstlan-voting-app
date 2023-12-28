@@ -97,6 +97,15 @@ def get_ratings_for_game(game_id):
 
     return [rating[0] for rating in ratings]
 
+def get_rated_users_for_game(game_id):
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute('SELECT username FROM user_ratings WHERE game_id = ?', (game_id,))
+    ratings = cursor.fetchall()
+    conn.close()
+
+    return [rating[0] for rating in ratings]
+
 def has_user_voted(username, game_id):
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
