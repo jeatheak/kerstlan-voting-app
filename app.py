@@ -9,7 +9,7 @@ from config import AppName
 from database.database import create_tables, add_game, get_games, delete_game, update_game, add_user_rating, get_ratings_for_game, update_user_rating, has_user_voted, get_rated_users_for_game
 from utils.image_utils import save_uploaded_image
 from utils.email_utils import email_forgot_password, email_forgot_username
-from utils.steam import fetch_game_details
+from utils.steam import fetch_game_details, extract_app_id
 
 if not os.path.exists("./config/config.yaml"):
     path = shutil.copy("./config.example.yaml", "./config/config.yaml")
@@ -243,8 +243,9 @@ def main():
                 if image_path:
                     st.image(image_path, use_column_width=False, width=300)
 
-                st.write("Description:", game[2])
-                st.write("Link:", game[3])
+                st.write(game[2])
+                app_id = extract_app_id(game[3])
+                st.markdown(f"Store: [Steam Website]({game[3]}) | [Steam Desktop](steam://store/{app_id})")
 
                 # Allow updating details
                 rating_slider_key = f"{game[0]}_rating_slider"
@@ -306,7 +307,8 @@ def list_games():
             st.image(image_path, use_column_width=False, width=300)
 
         st.write(game[2])
-        st.markdown("[Steam Link](%s)" % game[3])
+        app_id = extract_app_id(game[3])
+        st.markdown(f"Store: [Steam Website]({game[3]}) | [Steam Desktop](steam://store/{app_id})")
 
         # Calculate and display total rating for the current game
         total_rating = game[5]
