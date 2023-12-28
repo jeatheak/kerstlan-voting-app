@@ -6,7 +6,7 @@ import shutil
 from yaml.loader import SafeLoader
 from streamlit_authenticator import Authenticate
 from config import AppName
-from database.database import create_tables, add_game, get_games, delete_game, update_game, add_user_rating, get_ratings_for_game, update_user_rating, has_user_voted
+from database.database import create_tables, add_game, get_games, delete_game, update_game, add_user_rating, get_ratings_for_game, update_user_rating, has_user_voted, get_rated_users_for_game
 from utils.image_utils import save_uploaded_image
 from utils.email_utils import email_forgot_password, email_forgot_username
 from utils.steam import fetch_game_details
@@ -121,8 +121,8 @@ def main():
         if st.sidebar.button('Account 😁', type='primary' if st.session_state.choice == 'Account' else 'secondary', use_container_width=True):
             st.session_state.choice = 'Account'
             st.rerun()
-        if isAdmin and st.sidebar.button('Admin 👑', type='primary' if st.session_state.choice == 'Admin' else 'secondary', use_container_width=True):
-            st.session_state.choice = 'Admin'
+        if st.sidebar.button('Manage 👑', type='primary' if st.session_state.choice == 'Manage' else 'secondary', use_container_width=True):
+            st.session_state.choice = 'Manage'
             st.rerun()
         st.sidebar.divider()
         authenticator.logout('Logout', key='unique_key', location="sidebar")
@@ -144,9 +144,10 @@ def main():
             except Exception as e:
                 st.error(e)
             
-        elif choice == "Admin" and isAdmin:
+        elif choice == "Manage":
             st.header("Manage Games")
-            action = st.selectbox("Select action", [ "Add Steam Game","Add Custom Game", "Delete", "Update"])
+            actions = [ "Add Steam Game","Add Custom Game", "Delete", "Update"] if isAdmin else ["Add Steam Game","Add Custom Game"]
+            action = st.selectbox("Select action", actions)
 
             if action == "Add Custom Game":
                 st.subheader("Add a Custom New Game")
@@ -169,6 +170,7 @@ def main():
                     st.success("Game added successfully!")
             if action == "Add Steam Game":
                 st.subheader("Add a Steam New Game")
+                st.write('Provide a valid steam store url: Example: https://store.steampowered.com/app/892970/Valheim/')
                 steam_link = st.text_input("Steam Url")
 
                 # Generate a unique key for the "Add Game" button
@@ -303,12 +305,14 @@ def list_games():
         if image_path:
             st.image(image_path, use_column_width=False, width=300)
 
-        st.write("Description:", game[2])
-        st.markdown("Url: [Steam](%s)" % game[3])
+        st.write(game[2])
+        st.markdown("[Steam Link](%s)" % game[3])
 
         # Calculate and display total rating for the current game
         total_rating = game[5]
         st.subheader(f"Total Rating: {total_rating}")
+        users_voted = get_voted_users(game[0])
+        st.write('Users voted: ' + (','.join(users_voted) if len(users_voted) > 0 else '0'))
         st.divider()
         ranking += 1
 
@@ -321,6 +325,13 @@ def calculate_total_rating_for_game(game_id):
         return total_sum / total_count
 
     return 0
+
+def get_voted_users(game_id):
+    users = get_rated_users_for_game(game_id)
+    if users:
+        return users
+
+    return []
 
 def save_uploaded_image(uploaded_image):
     if uploaded_image:
