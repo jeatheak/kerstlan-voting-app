@@ -14,8 +14,6 @@ from utils.steam import fetch_game_details
 if not os.path.exists("./config/config.yaml"):
     path = shutil.copy("./config.example.yaml", "./config/config.yaml")
     st.success("Config file created. Please modify config.yaml with your settings.")
-    print(path)
-    st.error(path)
 
 with open('./config/config.yaml') as file:
     config = yaml.load(file, Loader=SafeLoader)
