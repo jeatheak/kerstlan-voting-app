@@ -1,6 +1,8 @@
 # app.py
 import streamlit as st
 import yaml
+import os
+import shutil
 from yaml.loader import SafeLoader
 from streamlit_authenticator import Authenticate
 from config import AppName
@@ -9,6 +11,9 @@ from utils.image_utils import save_uploaded_image
 from utils.email_utils import email_forgot_password, email_forgot_username
 from utils.steam import fetch_game_details
 
+if not os.path.exists("config.yaml"):
+    shutil.copy("config.example.yaml", "config.yaml")
+    st.success("Config file created. Please modify config.yaml with your settings.")
 
 with open('config.yaml') as file:
     config = yaml.load(file, Loader=SafeLoader)
@@ -40,15 +45,18 @@ def main():
     if 'forgot_user' not in st.session_state:
         st.session_state.forgot_user = False
 
+    if 'register_user' not in st.session_state:
+        st.session_state.register_user = False
+
     if 'choice' not in st.session_state:
         st.session_state.choice = 'List Games'
 
     if not isLoggedIn:
-        if not st.session_state.forgot_pwd and not st.session_state.forgot_user:
+        if not st.session_state.forgot_pwd and not st.session_state.forgot_user and not st.session_state.register_user:
             authenticator.login('Login', 'main') 
             if st.session_state.authentication_status:
                 st.rerun()
-            forgot_col1, forgot_col2 = st.columns([1,3])
+            forgot_col1, forgot_col2, forgot_col3 = st.columns([1,1,2])
             with forgot_col1:
                 if st.button('Forgot password'):
                     st.session_state.forgot_pwd = True
@@ -56,6 +64,10 @@ def main():
             with forgot_col2:
                 if st.button('Forgot username'):
                     st.session_state.forgot_user = True
+                    st.rerun()
+            with forgot_col3:
+                if st.button('Register'):
+                    st.session_state.register_user = True
                     st.rerun()
         elif st.session_state.forgot_pwd:
             try:
@@ -71,6 +83,16 @@ def main():
                     st.rerun()
             except Exception as e:
                 st.error(e)     
+        elif st.session_state.register_user:
+            try:
+                if authenticator.register_user('Register user', preauthorization=False):
+                    write_auth()
+                    st.success('User registered successfully')
+                if st.button('Back','register_user_btn_back'):
+                    st.session_state.register_user = False
+                    st.rerun()
+            except Exception as e:
+                st.error(e)  
         elif st.session_state.forgot_user:
             try:
                 username_of_forgotten_username, email_of_forgotten_username = authenticator.forgot_username('Forgot username')
