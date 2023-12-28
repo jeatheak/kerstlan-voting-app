@@ -241,7 +241,7 @@ def main():
                 # Display picture, description, and link (unchanged)
                 image_path = game[4]  # Assuming image_path is at index 5
                 if image_path:
-                    st.image(image_path, caption=f"Cover for {game[1]}", use_column_width=False, width=150)
+                    st.image(image_path, use_column_width=False, width=300)
 
                 st.write("Description:", game[2])
                 st.write("Link:", game[3])
