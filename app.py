@@ -301,7 +301,7 @@ def list_games():
         # Display picture, description, and link (unchanged)
         image_path = game[4]  # Assuming image_path is at index 5
         if image_path:
-            st.image(image_path, use_column_width=False, width=350)
+            st.image(image_path, use_column_width=False, width=300)
 
         st.write("Description:", game[2])
         st.markdown("Url: [Steam](%s)" % game[3])
