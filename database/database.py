@@ -2,7 +2,7 @@
 import sqlite3
 import os
 
-DB_NAME = "database/games.db"
+DB_NAME = "database/db/games.db"
 
 def create_tables():
     with sqlite3.connect(DB_NAME) as conn:
