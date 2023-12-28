@@ -4,9 +4,9 @@ cookie:
   name: 
 credentials:
   usernames:
-    dkin:
-      email: john@gmail.com
-      name: tho
-      password: 
+    user:
+      email: null
+      name: null
+      password: null
 preauthorized:
   emails: null

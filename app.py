@@ -11,11 +11,13 @@ from utils.image_utils import save_uploaded_image
 from utils.email_utils import email_forgot_password, email_forgot_username
 from utils.steam import fetch_game_details
 
-if not os.path.exists("config.yaml"):
-    shutil.copy("config.example.yaml", "config.yaml")
+if not os.path.exists("./config/config.yaml"):
+    path = shutil.copy("./config/config.example.yaml", "./config/config.yaml")
     st.success("Config file created. Please modify config.yaml with your settings.")
+    print(path)
+    st.error(path)
 
-with open('config.yaml') as file:
+with open('./config/config.yaml') as file:
     config = yaml.load(file, Loader=SafeLoader)
 
 
@@ -28,7 +30,7 @@ authenticator = Authenticate(
 )
 
 def write_auth():
-    with open('config.yaml', 'w') as file:
+    with open('/app/config/config.yaml', 'w') as file:
         yaml.dump(config, file, default_flow_style=False)
 
 

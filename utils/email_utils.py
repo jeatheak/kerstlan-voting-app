@@ -1,15 +1,11 @@
-import email, smtplib, ssl
-
-from email import encoders
-from email.mime.base import MIMEBase
-from email.mime.multipart import MIMEMultipart
+import smtplib
 from email.mime.text import MIMEText
 
-from config import AppName
+from config import AppName, Email_Password
 
 sender_email = "noreply.kerstlan@gmail.com"
 from_email = f"{AppName} <noreply.kerstlan@gmail.com>"
-password = "lkfm ezcs sffw jkzm"
+password = Email_Password
 
 def email_forgot_password(email: str, new_password: str, username: str):
     subject = f"New password request for: {str.capitalize(username)}"
