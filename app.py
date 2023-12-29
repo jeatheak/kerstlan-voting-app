@@ -1,14 +1,17 @@
-import streamlit as st
 import yaml
 import os
 import shutil
 from yaml.loader import SafeLoader
 from streamlit_authenticator import Authenticate
-from config import AppName, config_path
-from database.database import create_tables, add_game, get_games, delete_game, update_game, add_user_rating, get_ratings_for_game, update_user_rating, has_user_voted, get_rated_users_for_game
+from config import AppName, config_path, admin_user
+import streamlit as st
+from config import admin_user
+from database.database import add_game, get_games, delete_game, update_game, add_user_rating, update_user_rating, has_user_voted, get_rated_users_for_game
+from utils.calc import calculate_total_rating_for_game
+from utils.christmass import christmas_countdown
 from utils.image_utils import save_uploaded_image
-from utils.email_utils import email_forgot_password, email_forgot_username
 from utils.steam import fetch_game_details, extract_app_id
+from utils.login import authenticator, write_auth, login
 
 if not os.path.exists(config_path):
     path = shutil.copy("./config.example.yaml", config_path)
@@ -17,7 +20,6 @@ if not os.path.exists(config_path):
 with open(config_path) as file:
     config = yaml.load(file, Loader=SafeLoader)
 
-
 authenticator = Authenticate(
     config['credentials'],
     config['cookie']['name'],
@@ -25,92 +27,12 @@ authenticator = Authenticate(
     config['cookie']['expiry_days']
 )
 
-def write_auth():
-    with open(config_path, 'w') as file:
-        yaml.dump(config, file, default_flow_style=False)
+isAdmin = st.session_state["username"] == admin_user
 
-
-def main():
-    create_tables()
-
-    st.title(AppName)
-    
-
-    if 'forgot_pwd' not in st.session_state:
-        st.session_state.forgot_pwd = False
-
-    if 'forgot_user' not in st.session_state:
-        st.session_state.forgot_user = False
-
-    if 'register_user' not in st.session_state:
-        st.session_state.register_user = False
-
-    if 'choice' not in st.session_state:
-        st.session_state.choice = 'List Games'
-
-    authenticator.login('Login', 'main') 
-    isLoggedIn = st.session_state.authentication_status
-    if isLoggedIn is None or isLoggedIn is False:
-        if isLoggedIn is False:
-            st.error('Username/password is incorrect')
-
-        if not st.session_state.forgot_pwd and not st.session_state.forgot_user and not st.session_state.register_user:
-            if st.session_state.authentication_status:
-                st.rerun()
-            forgot_col1, forgot_col2, forgot_col3 = st.columns([1,1,2])
-            with forgot_col1:
-                if st.button('Forgot password'):
-                    st.session_state.forgot_pwd = True
-                    st.rerun()
-            with forgot_col2:
-                if st.button('Forgot username'):
-                    st.session_state.forgot_user = True
-                    st.rerun()
-            with forgot_col3:
-                if st.button('Register'):
-                    st.session_state.register_user = True
-                    st.rerun()
-        elif st.session_state.forgot_pwd:
-            try:
-                username_of_forgotten_password, email_of_forgotten_password, new_random_password = authenticator.forgot_password('Forgot password')
-                if username_of_forgotten_password:
-                    email_forgot_password(email_of_forgotten_password, new_random_password, username_of_forgotten_password)
-                    write_auth()
-                    st.success(f"Send newly generated password to email of {username_of_forgotten_password}")
-                elif username_of_forgotten_password == False:
-                    st.error('Username not found')
-                if st.button('Back','forgot_pwd_btn_back'):
-                    st.session_state.forgot_pwd = False
-                    st.rerun()
-            except Exception as e:
-                st.error(e)     
-        elif st.session_state.register_user:
-            try:
-                if authenticator.register_user('Register user', preauthorization=False):
-                    write_auth()
-                    st.success('User registered successfully')
-                if st.button('Back','register_user_btn_back'):
-                    st.session_state.register_user = False
-                    st.rerun()
-            except Exception as e:
-                st.error(e)  
-        elif st.session_state.forgot_user:
-            try:
-                username_of_forgotten_username, email_of_forgotten_username = authenticator.forgot_username('Forgot username')
-                if username_of_forgotten_username:
-                    email_forgot_username(email_of_forgotten_username, username_of_forgotten_username)
-                    write_auth()
-                    st.success(f"Send username to: {email_of_forgotten_username}")
-                elif username_of_forgotten_username == False:
-                    st.error('Email not found')
-                if st.button('Back','forgot_user_btn_back'):
-                    st.session_state.forgot_user = False
-                    st.rerun()
-            except Exception as e:
-                st.error(e)
-    
-    elif isLoggedIn:
-        isAdmin = st.session_state["username"] == 'dkin'
+def main():    
+    if login():
+        christmas_countdown()
+        isAdmin = st.session_state["username"] == admin_user
         st.sidebar.write(f'Welcome *{str.capitalize(st.session_state["name"])}*')
         st.sidebar.divider()
         if st.sidebar.button('List Games 🎮', type='primary' if st.session_state.choice == 'List Games' else 'secondary', use_container_width=True):
@@ -207,101 +129,7 @@ def main():
                     update_game(selected_game, new_name, new_description, new_link, new_image_path)
                     st.success(f"{selected_game} updated successfully!")
 
-        elif choice == "Vote":
-            st.header("Vote for Games")
-
-            games = get_games()
-
-            username = st.session_state["username"]
-            for game in games:
-                st.subheader(game[1])  
-
-                image_path = game[4]  
-                if image_path:
-                    st.image(image_path, use_column_width=False, width=300)
-
-                st.write(game[2])
-                app_id = extract_app_id(game[3])
-                st.markdown(f"Store: [Steam Website]({game[3]}) | [Steam Desktop](steam://store/{app_id})")
-
-                rating_slider_key = f"{game[0]}_rating_slider"
-                vote_button_key = f"vote_button_{game[0]}"
-
-                has_voted, votes = has_user_voted(username, game[0])
-
-                if has_voted:
-                    st.info("You have already voted for this game. You can update your vote.")
-                    rating = st.slider("Update your rating", 1, 10, key=rating_slider_key, value=votes)
-                else:
-                    st.warning("You haven't voted for this game yet. Please vote.")
-                    rating = st.slider("Rate this game", 1, 10, key=rating_slider_key)
-
-                if st.button("Vote", key=vote_button_key):
-                    game_id = game[0]
-                    if has_voted:
-                        update_user_rating(username, game_id, rating)
-                        st.success(f"Your vote for {game[1]} has been updated!")
-                    else:
-                        add_user_rating(username, game_id, rating)
-                        st.success(f"Your vote for {game[1]} has been recorded!")
-
-                    total_rating = calculate_total_rating_for_game(game_id)
-                    st.write(f"Total Rating for {game[1]}: {total_rating}")
-                    st.rerun()
-
-        elif choice == "List Games":
-            list_games()
-
-def game_sort(e):
-    return e[5]
-
-def list_games():
-    st.header("List of Games with Total Ratings")
-    games = get_games()
-    st.divider()
-    new_games = list()
-
-    for game in games:
-        game = list(game)
-        game.append(calculate_total_rating_for_game(game[0]))
-        new_games.append(game)
         
-    new_games.sort(key=game_sort,reverse=True)
-    ranking = 1
-    for game in new_games:
-        st.subheader(f'{ranking}. {game[1]}')
-
-        image_path = game[4]
-        if image_path:
-            st.image(image_path, use_column_width=False, width=300)
-
-        st.write(game[2])
-        app_id = extract_app_id(game[3])
-        st.markdown(f"Store: [Steam Website]({game[3]}) | [Steam Desktop](steam://store/{app_id})")
-
-        total_rating = game[5]
-        st.subheader(f"Total Rating: {total_rating}")
-        users_voted = get_voted_users(game[0])
-        st.write('Users voted: ' + (','.join(users_voted) if len(users_voted) > 0 else '0'))
-        st.divider()
-        ranking += 1
-
-def calculate_total_rating_for_game(game_id):
-    ratings = get_ratings_for_game(game_id)
-    
-    if ratings:
-        total_sum = sum(ratings)
-        total_count = len(ratings)
-        return total_sum / total_count
-
-    return 0
-
-def get_voted_users(game_id):
-    users = get_rated_users_for_game(game_id)
-    if users:
-        return users
-
-    return []
 
 def save_uploaded_image(uploaded_image):
     if uploaded_image:

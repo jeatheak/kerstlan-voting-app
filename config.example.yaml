@@ -8,5 +8,4 @@ credentials:
       email: null
       name: null
       password: null
-preauthorized:
-  emails: null
+      
