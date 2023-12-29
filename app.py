@@ -1,21 +1,20 @@
-# app.py
 import streamlit as st
 import yaml
 import os
 import shutil
 from yaml.loader import SafeLoader
 from streamlit_authenticator import Authenticate
-from config import AppName
+from config import AppName, config_path
 from database.database import create_tables, add_game, get_games, delete_game, update_game, add_user_rating, get_ratings_for_game, update_user_rating, has_user_voted, get_rated_users_for_game
 from utils.image_utils import save_uploaded_image
 from utils.email_utils import email_forgot_password, email_forgot_username
 from utils.steam import fetch_game_details, extract_app_id
 
-if not os.path.exists("./config/config.yaml"):
-    path = shutil.copy("./config.example.yaml", "./config/config.yaml")
+if not os.path.exists(config_path):
+    path = shutil.copy("./config.example.yaml", config_path)
     st.success("Config file created. Please modify config.yaml with your settings.")
 
-with open('./config/config.yaml') as file:
+with open(config_path) as file:
     config = yaml.load(file, Loader=SafeLoader)
 
 
@@ -23,12 +22,11 @@ authenticator = Authenticate(
     config['credentials'],
     config['cookie']['name'],
     config['cookie']['key'],
-    config['cookie']['expiry_days'],
-    config['preauthorized']
+    config['cookie']['expiry_days']
 )
 
 def write_auth():
-    with open('/app/config/config.yaml', 'w') as file:
+    with open(config_path, 'w') as file:
         yaml.dump(config, file, default_flow_style=False)
 
 
@@ -37,7 +35,6 @@ def main():
 
     st.title(AppName)
     
-    isLoggedIn = st.session_state.authentication_status
 
     if 'forgot_pwd' not in st.session_state:
         st.session_state.forgot_pwd = False
@@ -51,9 +48,13 @@ def main():
     if 'choice' not in st.session_state:
         st.session_state.choice = 'List Games'
 
-    if not isLoggedIn:
+    authenticator.login('Login', 'main') 
+    isLoggedIn = st.session_state.authentication_status
+    if isLoggedIn is None or isLoggedIn is False:
+        if isLoggedIn is False:
+            st.error('Username/password is incorrect')
+
         if not st.session_state.forgot_pwd and not st.session_state.forgot_user and not st.session_state.register_user:
-            authenticator.login('Login', 'main') 
             if st.session_state.authentication_status:
                 st.rerun()
             forgot_col1, forgot_col2, forgot_col3 = st.columns([1,1,2])
@@ -154,32 +155,23 @@ def main():
                 name = st.text_input("Name")
                 description = st.text_area("Description")
                 link = st.text_input("Link")
-                
-                # Image upload
                 image = st.file_uploader("Choose an image", type=["jpg", "jpeg", "png"])
-
-                # Generate a unique key for the "Add Game" button
                 add_button_key = f"add_button_{name}"
 
                 if st.button("Add Game", key=add_button_key):
-                    # Save the uploaded image to a temporary location
                     image_path = save_uploaded_image(image)
-
-                    # Add the game to the database
                     add_game(name, description, link, image_path)
                     st.success("Game added successfully!")
+
             if action == "Add Steam Game":
                 st.subheader("Add a Steam New Game")
                 st.write('Provide a valid steam store url: Example: https://store.steampowered.com/app/892970/Valheim/')
                 steam_link = st.text_input("Steam Url")
-
-                # Generate a unique key for the "Add Game" button
                 add_button_key = f"add_button_steam_game"
 
                 if st.button("Add Game", key=add_button_key):
                     name, description, image_path = fetch_game_details(steam_link)
                     if name and description and image_path:
-                        # Add the game to the database
                         add_game(name, description, steam_link, image_path)
                         st.success("Game added successfully!")
                     else:
@@ -193,39 +185,25 @@ def main():
                 selected_game = st.selectbox("Select a game to delete", game_names)
 
                 if st.button("Delete Game"):
-                    # Add code to delete the selected game
-                    # Assuming you have a function to handle this in the database module
                     delete_game(selected_game)
                     st.success(f"{selected_game} deleted successfully!")
-
-                    # After deletion, refresh the page to reflect the updated list of games
-                    st.experimental_rerun()
+                    st.rerun()
 
             elif action == "Update":
                 st.subheader("Update Game Information")
                 games = get_games()
                 game_names = [game[1] for game in games]
                 selected_game = st.selectbox("Select a game to update", game_names)
-
-                # Get the selected game details
                 selected_game_details = [game for game in games if game[1] == selected_game][0]
-                
-                # Allow updating details
                 new_name = st.text_input("New Name", value=selected_game_details[1])
                 new_description = st.text_area("New Description", value=selected_game_details[2])
                 new_link = st.text_input("New Link", value=selected_game_details[3])
-                
-                # Image upload for updating
                 new_image = st.file_uploader("Choose a new image", type=["jpg", "jpeg", "png"])
-
-                # Generate a unique key for the "Update Game" button
                 update_button_key = f"update_button_{selected_game}"
 
                 if st.button("Update Game", key=update_button_key):
-                    # Save the uploaded image to a temporary location
                     new_image_path = save_uploaded_image(new_image)
 
-                    # Update the selected game, including the new image path
                     update_game(selected_game, new_name, new_description, new_link, new_image_path)
                     st.success(f"{selected_game} updated successfully!")
 
@@ -236,10 +214,9 @@ def main():
 
             username = st.session_state["username"]
             for game in games:
-                st.subheader(game[1])  # Displaying game name
+                st.subheader(game[1])  
 
-                # Display picture, description, and link (unchanged)
-                image_path = game[4]  # Assuming image_path is at index 5
+                image_path = game[4]  
                 if image_path:
                     st.image(image_path, use_column_width=False, width=300)
 
@@ -247,11 +224,9 @@ def main():
                 app_id = extract_app_id(game[3])
                 st.markdown(f"Store: [Steam Website]({game[3]}) | [Steam Desktop](steam://store/{app_id})")
 
-                # Allow updating details
                 rating_slider_key = f"{game[0]}_rating_slider"
                 vote_button_key = f"vote_button_{game[0]}"
 
-                # Check if the user has already voted for this game
                 has_voted, votes = has_user_voted(username, game[0])
 
                 if has_voted:
@@ -262,7 +237,6 @@ def main():
                     rating = st.slider("Rate this game", 1, 10, key=rating_slider_key)
 
                 if st.button("Vote", key=vote_button_key):
-                    # Add or update user rating in the database
                     game_id = game[0]
                     if has_voted:
                         update_user_rating(username, game_id, rating)
@@ -271,16 +245,12 @@ def main():
                         add_user_rating(username, game_id, rating)
                         st.success(f"Your vote for {game[1]} has been recorded!")
 
-                    # Calculate and display total rating for the current game
                     total_rating = calculate_total_rating_for_game(game_id)
                     st.write(f"Total Rating for {game[1]}: {total_rating}")
                     st.rerun()
 
         elif choice == "List Games":
             list_games()
-    
-    elif st.session_state["authentication_status"] is False:
-        st.error('Username/password is incorrect')
 
 def game_sort(e):
     return e[5]
@@ -299,10 +269,9 @@ def list_games():
     new_games.sort(key=game_sort,reverse=True)
     ranking = 1
     for game in new_games:
-        st.subheader(f'{ranking}. {game[1]}')  # Displaying game name
+        st.subheader(f'{ranking}. {game[1]}')
 
-        # Display picture, description, and link (unchanged)
-        image_path = game[4]  # Assuming image_path is at index 5
+        image_path = game[4]
         if image_path:
             st.image(image_path, use_column_width=False, width=300)
 
@@ -310,7 +279,6 @@ def list_games():
         app_id = extract_app_id(game[3])
         st.markdown(f"Store: [Steam Website]({game[3]}) | [Steam Desktop](steam://store/{app_id})")
 
-        # Calculate and display total rating for the current game
         total_rating = game[5]
         st.subheader(f"Total Rating: {total_rating}")
         users_voted = get_voted_users(game[0])
@@ -337,8 +305,6 @@ def get_voted_users(game_id):
 
 def save_uploaded_image(uploaded_image):
     if uploaded_image:
-        # Save the uploaded image to a temporary location
-        # You may want to customize this based on your application's needs
         image_path = f"uploads/{uploaded_image.name}"
         with open(image_path, "wb") as f:
             f.write(uploaded_image.read())
