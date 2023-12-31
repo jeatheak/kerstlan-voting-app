@@ -1,8 +1,9 @@
 # database.py
 import sqlite3
 import os
+from config import database_path
 
-DB_NAME = "database/db/games.db"
+DB_NAME = database_path
 
 def create_tables():
     with sqlite3.connect(DB_NAME) as conn:
@@ -96,6 +97,16 @@ def get_ratings_for_game(game_id):
     conn.close()
 
     return [rating[0] for rating in ratings]
+
+def get_user_ratings_for_game(game_id):
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute('SELECT username, rating FROM user_ratings WHERE game_id = ?', (game_id,))
+    ratings = cursor.fetchall()
+    conn.close()
+
+    return ratings
+
 
 def get_rated_users_for_game(game_id):
     conn = sqlite3.connect(DB_NAME)
