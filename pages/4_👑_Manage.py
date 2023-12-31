@@ -1,13 +1,30 @@
 import streamlit as st
+
+st.set_page_config(
+        page_title="Manage - Kertlan",
+        page_icon="🎅",
+    )
+
 from database.database import add_game, get_games, delete_game, update_game
 from utils.image_utils import save_uploaded_image
 from utils.steam import fetch_game_details
 from utils.login import isAdmin, login
+from utils.submenu import generate_subment_extras
+from utils.login import config
+from streamlit_authenticator import Authenticate
 
+authenticate = Authenticate(
+            config['credentials'],
+            config['cookie']['name'],
+            config['cookie']['key'],
+            config['cookie']['expiry_days']
+        )
+
+st.session_state.authenticate = authenticate
 
 def page():
     st.header("Manage Games")
-    actions = [ "Add Steam Game","Add Custom Game", "Delete", "Update"] if isAdmin else ["Add Steam Game","Add Custom Game"]
+    actions = [ "Add Steam Game","Add Custom Game", "Delete", "Update"] if isAdmin() else ["Add Steam Game","Add Custom Game"]
     action = st.selectbox("Select action", actions)
 
     if action == "Add Custom Game":
@@ -69,4 +86,5 @@ def page():
             
 if __name__ == "__main__":
     if login():
+        generate_subment_extras()
         page()

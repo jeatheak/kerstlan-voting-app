@@ -1,9 +1,26 @@
 import streamlit as st
+
+st.set_page_config(
+        page_title="Vote - Kertlan",
+        page_icon="🎅",
+    )
+
 from database.database import get_games, add_user_rating, update_user_rating, has_user_voted
 from utils.calc import calculate_total_rating_for_game
 from utils.login import login
 from utils.steam import extract_app_id
+from utils.submenu import generate_subment_extras
+from utils.login import config
+from streamlit_authenticator import Authenticate
 
+authenticate = Authenticate(
+            config['credentials'],
+            config['cookie']['name'],
+            config['cookie']['key'],
+            config['cookie']['expiry_days']
+        )
+
+st.session_state.authenticate = authenticate
 
 def page():
     st.header("Vote for Games")
@@ -49,4 +66,5 @@ def page():
 
 if __name__ == "__main__":
     if login():
+        generate_subment_extras()
         page()
