@@ -8,7 +8,7 @@ import pandas as pd
 import numpy as np
 
 st.set_page_config(
-        page_title="Home - Kertlan",
+        page_title="Home - Kerstlan",
         page_icon="🎅",
         layout="centered",
         initial_sidebar_state="expanded",

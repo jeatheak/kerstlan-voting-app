@@ -1,7 +1,7 @@
 import streamlit as st
 
 st.set_page_config(
-        page_title="Vote - Kertlan",
+        page_title="Vote - Kerstlan",
         page_icon="🎅",
     )
 

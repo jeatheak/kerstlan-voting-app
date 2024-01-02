@@ -2,7 +2,7 @@ import streamlit as st
 from streamlit_authenticator import Authenticate
 
 st.set_page_config(
-        page_title="Account - Kertlan",
+        page_title="Account - Kerstlan",
         page_icon="🎅",
     )
 

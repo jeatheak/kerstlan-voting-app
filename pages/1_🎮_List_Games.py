@@ -1,7 +1,7 @@
 import streamlit as st
 
 st.set_page_config(
-        page_title="List Games - Kertlan",
+        page_title="List Games - Kerstlan",
         page_icon="🎅",
     )
 
