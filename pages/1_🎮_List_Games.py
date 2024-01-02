@@ -1,13 +1,13 @@
 import streamlit as st
 
 st.set_page_config(
-        page_title="List Games - Kerstlan",
+        page_title="List Games - Kertlan",
         page_icon="🎅",
     )
 
 from database.database import get_games, get_user_ratings_for_game
 from utils.calc import calculate_total_rating_for_game, get_voted_users
-from utils.login import login
+from utils.login import isAdmin, login
 from utils.steam import extract_app_id
 from utils.submenu import generate_subment_extras
 import pandas as pd
@@ -49,13 +49,14 @@ def page():
         st.markdown(f"Store: [Steam Website]({game[3]}) | [Steam Desktop](steam://store/{app_id})")
 
         total_rating = game[5]
-        st.subheader(f"Total Rating: {total_rating}")
+        st.subheader(f"Total Rating: {round(total_rating,1)}")
         users_voted = get_user_ratings_for_game(game[0])
         st.write('Users voted: ' + (','.join([vote[0] for vote in users_voted]) if len(users_voted) > 0 else '0'))
-        with st.expander("Votes per User"):
-            ratings = users_voted
-            chart_data = pd.DataFrame([rating[1] for rating in ratings],[rating[0] for rating in ratings] , columns=["rating"])
-            st.bar_chart(chart_data)
+        if isAdmin():
+            with st.expander("Votes per User"):
+                ratings = users_voted
+                chart_data = pd.DataFrame([rating[1] for rating in ratings],[rating[0] for rating in ratings] , columns=["rating"])
+                st.bar_chart(chart_data)
         st.divider()
         ranking += 1
 
