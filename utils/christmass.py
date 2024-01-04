@@ -9,7 +9,7 @@ def kerstlan_countdown(location='sidebar'):
     today = datetime.now()
     kerstlan_day = datetime(year, month, day)
 
-    days_left = (kerstlan_day - today).days
+    days_left = (kerstlan_day - today).days + 1
 
     if location == 'sidebar':
         st.sidebar.header(f"Days Left: {days_left} 🎄🎅")
