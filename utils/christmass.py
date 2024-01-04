@@ -2,7 +2,7 @@ import streamlit as st
 from datetime import datetime
 
 year = 2024
-day = 8
+day = 5
 month = 1
 
 def kerstlan_countdown(location='sidebar'):
