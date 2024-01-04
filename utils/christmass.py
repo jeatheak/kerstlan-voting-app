@@ -9,15 +9,19 @@ hour = 12
 
 def kerstlan_countdown(location='sidebar'):
     today = datetime.now()
-    kerstlan_day = datetime(year, month, day, hour)
+    kerstlan_day = datetime(year, month, day, hour-1)
 
     days_left = (kerstlan_day - today).days
 
     if days_left == 0:
-        hours_left = (kerstlan_day - today).seconds / 3600
+        time_left = kerstlan_day - today
+        hours_left = time_left.total_seconds() // 3600
+        minutes_left = (time_left.total_seconds() // 60) % 60
+        seconds_left = time_left.total_seconds() % 60
+
         if hours_left < 1:
             hours_left = 0
-        left_text = f"Hours Left: {round(hours_left)} 🎄🎅"
+        left_text = f"Time Left: {int(hours_left):02d}h {int(minutes_left):02d}m {int(seconds_left):02d}s 🎄🎅"
 
     else:
         if days_left < 0:
