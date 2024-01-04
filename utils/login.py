@@ -14,6 +14,12 @@ def write_auth():
     with open(config_path, 'w') as file:
         yaml.dump(config, file, default_flow_style=False)
 
+def getUsername() -> str:
+    if 'username' not in st.session_state:
+        return ''
+    
+    return st.session_state.username
+
 def isAdmin() -> bool:
     if 'username' not in st.session_state:
         return False

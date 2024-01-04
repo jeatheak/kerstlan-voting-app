@@ -19,6 +19,19 @@ def create_tables():
         ''')
 
         cursor.execute('''
+            CREATE TABLE IF NOT EXISTS riddles (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT,
+                riddle TEXT,
+                hint TEXT,
+                answer TEXT,
+                used_hints INTEGER,
+                username TEXT,
+                solved INTEGER
+            )
+        ''')
+
+        cursor.execute('''
             CREATE TABLE IF NOT EXISTS user_ratings (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 username TEXT,
@@ -43,10 +56,54 @@ def get_games():
         games = cursor.fetchall()
     return games
 
+def get_riddles():
+    with sqlite3.connect(DB_NAME) as conn:
+        cursor = conn.cursor()
+        cursor.execute('SELECT * FROM riddles')
+        riddles = cursor.fetchall()
+    return riddles
+
+def add_riddle_hint(riddle_id, used_hints: int):
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    used_hints += 1
+
+    # Update other game details
+    cursor.execute('''
+        UPDATE riddles
+        SET used_hints=?
+        WHERE id=?
+    ''', (used_hints, riddle_id))
+
+    conn.commit()
+    conn.close()
+
+def add_riddle_answer(riddle_id):
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    solved = 1
+
+    # Update other game details
+    cursor.execute('''
+        UPDATE riddles
+        SET solved=?
+        WHERE id=?
+    ''', (solved,riddle_id))
+
+    conn.commit()
+    conn.close()
+
 def delete_game(name):
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
     cursor.execute('DELETE FROM games WHERE name = ?', (name,))
+    conn.commit()
+    conn.close()
+
+def delete_riddle(id):
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute('DELETE FROM riddles WHERE id = ?', (id,))
     conn.commit()
     conn.close()
 
@@ -79,6 +136,20 @@ def update_game(name, new_name, new_description, new_link, new_image_path=None):
     conn.commit()
     conn.close()
 
+def update_riddle(id, new_name, new_riddle, new_hint, new_answer, used_hints, new_username, solved):
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+
+    # Update other game details
+    cursor.execute('''
+        UPDATE riddles
+        SET name=?, riddle=?, hint=?, answer=?, used_hints=?, username=?, solved=?
+        WHERE id=?
+    ''', (new_name, new_riddle, new_hint, new_answer, used_hints, new_username, solved, id))
+
+    conn.commit()
+    conn.close()
+
 def add_user_rating(username, game_id, rating):
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
@@ -86,6 +157,16 @@ def add_user_rating(username, game_id, rating):
         INSERT INTO user_ratings (username, game_id, rating)
         VALUES (?, ?, ?)
     ''', (username, game_id, rating))
+    conn.commit()
+    conn.close()
+
+def add_riddle(name, riddle, hint, answer, username):
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute('''
+        INSERT INTO riddles (name, riddle, hint, answer, username, used_hints, solved)
+        VALUES (?, ?, ?, ?, ?, 0, false)
+    ''', (name, riddle, hint, answer, username))
     conn.commit()
     conn.close()
 
@@ -116,6 +197,15 @@ def get_rated_users_for_game(game_id):
     conn.close()
 
     return [rating[0] for rating in ratings]
+
+def get_users():
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute('SELECT DISTINCT username FROM user_ratings')
+    users = cursor.fetchall()
+    conn.close()
+
+    return users
 
 def has_user_voted(username, game_id):
     conn = sqlite3.connect(DB_NAME)

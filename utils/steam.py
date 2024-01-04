@@ -1,3 +1,4 @@
+import streamlit as st
 import re
 import os
 import requests
@@ -39,7 +40,7 @@ def fetch_game_details(url: str):
 
         game_info = get_game_details(app_id)
         if game_info == None:
-            print("Game details not found.")
+            st.warning("Game details not found.")
             return None, None, None
         
         name = game_info['name']
@@ -51,13 +52,13 @@ def fetch_game_details(url: str):
             image_filepath = download_and_save_image(cover_url, uploads_folder, app_id)
 
             if image_filepath:
-                print(f"The cover image has been saved to: {image_filepath}")
+                st.warning(f"The cover image has been saved to: {image_filepath}")
             else:
-                print("Failed to save the cover image.")
+                st.warning("Failed to save the cover image.")
 
         else:
-            print("Cover image not found.")
+            st.warning("Cover image not found.")
 
         return name, description, image_filepath
     else:
-        print("App ID not found in the URL.")
+        st.warning("App ID not found in the URL.")

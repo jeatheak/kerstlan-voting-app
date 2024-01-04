@@ -5,7 +5,7 @@ st.set_page_config(
         page_icon="🎅",
     )
 
-from database.database import add_game, get_games, delete_game, update_game
+from database.database import add_game, add_riddle, delete_riddle, get_games, delete_game, get_riddles, get_users, update_game, update_riddle
 from utils.image_utils import save_uploaded_image
 from utils.steam import fetch_game_details
 from utils.login import isAdmin, login
@@ -24,7 +24,7 @@ st.session_state.authenticate = authenticate
 
 def page():
     st.header("Manage Games")
-    actions = [ "Add Steam Game","Add Custom Game", "Delete", "Update"] if isAdmin() else ["Add Steam Game","Add Custom Game"]
+    actions = [ "Add Steam Game","Add Custom Game", "Delete", "Update", "Add Riddle", "Update Riddle", "Delete Riddle"] if isAdmin() else ["Add Steam Game","Add Custom Game"]
     action = st.selectbox("Select action", actions)
 
     if action == "Add Custom Game":
@@ -83,6 +83,53 @@ def page():
 
             update_game(selected_game, new_name, new_description, new_link, new_image_path)
             st.success(f"{selected_game} updated successfully!")
+
+    elif action == "Add Riddle":
+        st.subheader("Add new Riddle")
+        name = st.text_input("Name")
+        riddle = st.text_area("Riddle")
+        hint = st.text_input("Hint")
+        answer = st.text_input("Answer")
+        users = [user[0] for user in get_users()]
+        username = st.selectbox("Select a User", users)
+        add_button_key = f"add_button_{name}"
+
+        if st.button("Add Riddle", key=add_button_key):
+            add_riddle(name, riddle, hint, answer, username)
+            st.success("Riddle added successfully!")
+            
+    elif action == 'Delete Riddle':
+        st.subheader("Delete a Game")
+        riddles = get_riddles()        
+        selected_riddle = st.selectbox("Select a riddle to update",riddles, format_func=lambda riddle: f'{riddle[1]}: {riddle[6]}')
+
+        if st.button("Delete riddle"):
+            delete_riddle(selected_riddle[0])
+            st.success(f"{selected_riddle[1]} deleted successfully!")
+            st.rerun()
+
+    elif action == "Update Riddle":
+        riddles = get_riddles()
+        if len(riddles) == 0: 
+            st.subheader('0 riddles in DB!')
+            return
+        st.subheader("Update Riddle Information")
+        selected_riddle = st.selectbox("Select a riddle to update",riddles, format_func=lambda riddle: f'{riddle[1]}: {riddle[6]}')
+        new_name = st.text_input("Name", value=selected_riddle[1])
+        new_riddle = st.text_area("Riddle", value=selected_riddle[2])
+        new_hint = st.text_input("Hint", value=selected_riddle[3])
+        new_answer = st.text_input("Answer", value=selected_riddle[4])
+        used_hints = st.number_input("Used Hints", value=selected_riddle[5], min_value=0)
+        
+        # users = [user[0] for user in get_users()]
+        # selected_user_index = users.index(selected_riddle[6])
+        new_username = selected_riddle[6]
+        new_solved = 1 if st.checkbox("Solved", value=selected_riddle[7] == 1) else 0
+        update_button_key = f"update_button_{selected_riddle}"
+
+        if st.button("Update Riddle", key=update_button_key):
+            update_riddle(selected_riddle[0], new_name, new_riddle, new_hint, new_answer, used_hints, new_username, new_solved)
+            st.success(f"{selected_riddle[1]} updated successfully!")
             
 if __name__ == "__main__":
     if login():
